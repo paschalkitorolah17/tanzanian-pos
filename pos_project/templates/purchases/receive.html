@@ -1,0 +1,107 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Receive Stock{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h4 class="mb-0 fw-bold">Receive Stock</h4>
+    <small class="text-muted">Record goods received from supplier</small>
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+{% endif %}
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" id="receive-form">
+            {% csrf_token %}
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label">Branch *</label>
+                    <select name="branch" class="form-select" required>
+                        {% for b in branches %}
+                        <option value="{{ b.id }}">{{ b.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Supplier</label>
+                    <select name="supplier" class="form-select">
+                        <option value="">— Optional —</option>
+                        {% for s in suppliers %}
+                        <option value="{{ s.id }}">{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Reference / Invoice No.</label>
+                    <input type="text" name="reference" class="form-control" placeholder="Optional">
+                </div>
+            </div>
+
+            <h6 class="fw-semibold mb-3">Items</h6>
+            <div class="table-responsive mb-3">
+                <table class="table table-bordered" id="items-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Product</th>
+                            <th width="120">Quantity</th>
+                            <th width="150">Unit Cost (TZS)</th>
+                            <th width="50"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <select name="product_id" class="form-select form-select-sm" required>
+                                    <option value="">Select product</option>
+                                    {% for p in products %}
+                                    <option value="{{ p.id }}">{{ p.name }} ({{ p.sku }})</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td>
+                                <input type="number" name="quantity" class="form-control form-control-sm" min="0.001" step="1" required>
+                            </td>
+                            <td>
+                                <input type="number" name="unit_cost" class="form-control form-control-sm" min="0" step="100" value="0">
+                            </td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <button type="button" class="btn btn-sm btn-outline-secondary mb-4" id="btn-add-row">
+                + Add another item
+            </button>
+
+            <div class="mb-4">
+                <label class="form-label">Notes</label>
+                <textarea name="notes" class="form-control" rows="2"></textarea>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-neon">Receive Stock</button>
+                <a href="{% url 'purchase-list' %}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('btn-add-row').addEventListener('click', function() {
+    const tbody = document.querySelector('#items-table tbody');
+    const row = tbody.querySelector('tr').cloneNode(true);
+    row.querySelectorAll('input').forEach(i => i.value = '');
+    row.querySelector('select').selectedIndex = 0;
+    tbody.appendChild(row);
+});
+</script>
+{% endblock %}

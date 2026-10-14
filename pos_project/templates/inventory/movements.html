@@ -1,0 +1,53 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Stock Movements – {{ business.name }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h4 class="mb-0 fw-bold">Stock Movements</h4>
+    <small class="text-muted">Recent inventory transactions</small>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Product</th>
+                        <th class="text-end">Qty</th>
+                        <th class="text-end">Before</th>
+                        <th class="text-end">After</th>
+                        <th>By</th>
+                        <th>Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in movements %}
+                    <tr>
+                        <td>{{ m.created_at|date:"d M H:i" }}</td>
+                        <td>
+                            <span class="badge bg-secondary-subtle text-dark">{{ m.get_transaction_type_display }}</span>
+                        </td>
+                        <td>{{ m.product.name }}</td>
+                        <td class="text-end {% if m.quantity < 0 %}text-danger{% else %}text-success{% endif %}">
+                            {{ m.quantity|floatformat:0 }}
+                        </td>
+                        <td class="text-end">{{ m.previous_quantity|floatformat:0 }}</td>
+                        <td class="text-end">{{ m.new_quantity|floatformat:0 }}</td>
+                        <td>{{ m.created_by.username }}</td>
+                        <td class="small text-muted">{{ m.reason|truncatechars:30 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-5">No movements yet</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

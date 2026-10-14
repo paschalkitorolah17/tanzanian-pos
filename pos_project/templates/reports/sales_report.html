@@ -1,0 +1,153 @@
+{% extends "layouts/app.html" %}
+{% load static %}
+
+{% block title %}Sales Report – {{ business.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0 fw-bold">Sales Report</h4>
+        <small class="text-muted">{{ business.name }}</small>
+    </div>
+</div>
+
+<!-- Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">From</label>
+                <input type="date" name="from" value="{{ date_from }}" class="form-control">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">To</label>
+                <input type="date" name="to" value="{{ date_to }}" class="form-control">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-neon">Apply Filter</button>
+            </div>
+        </form>
+    </div>
+    <div class="col-md-3">
+    <a href="{% url 'sales-report-csv' %}?from={{ date_from }}&to={{ date_to }}"
+       class="btn btn-outline-secondary">
+        <i class="bi bi-download"></i> Export CSV
+    </a>
+</div>
+</div>
+
+<!-- Summary cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="stat-card highlight">
+            <div class="label">Total Sales</div>
+            <div class="value">TZS {{ summary.total_sales|floatformat:0 }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="label">Transactions</div>
+            <div class="value">{{ summary.total_transactions }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="label">Total Tax</div>
+            <div class="value">TZS {{ summary.total_tax|floatformat:0 }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="label">Total Discount</div>
+            <div class="value">TZS {{ summary.total_discount|floatformat:0 }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- By Cashier -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">Sales by Cashier</div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Cashier</th>
+                            <th class="text-end">Transactions</th>
+                            <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in by_cashier %}
+                        <tr>
+                            <td>{{ row.cashier__first_name }} {{ row.cashier__last_name }} ({{ row.cashier__username }})</td>
+                            <td class="text-end">{{ row.count }}</td>
+                            <td class="text-end">TZS {{ row.total|floatformat:0 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="text-center text-muted py-3">No data</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Products -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">Top Products</div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Product</th>
+                            <th class="text-end">Qty</th>
+                            <th class="text-end">Sales</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in top_products %}
+                        <tr>
+                            <td>{{ p.product__name }}</td>
+                            <td class="text-end">{{ p.total_qty|floatformat:0 }}</td>
+                            <td class="text-end">TZS {{ p.total_sales|floatformat:0 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="text-center text-muted py-3">No data</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Daily breakdown -->
+<div class="card mt-3">
+    <div class="card-header">Daily Breakdown</div>
+    <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Date</th>
+                    <th class="text-end">Transactions</th>
+                    <th class="text-end">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for day in by_day %}
+                <tr>
+                    <td>{{ day.day|date:"d M Y" }}</td>
+                    <td class="text-end">{{ day.count }}</td>
+                    <td class="text-end">TZS {{ day.total|floatformat:0 }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" class="text-center text-muted py-3">No data</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

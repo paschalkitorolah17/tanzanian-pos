@@ -1,0 +1,179 @@
+{% extends "layouts/app.html" %}
+{% load static %}
+
+{% block title %}Dashboard – {{ business.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0 fw-bold">Dashboard</h4>
+        <small class="text-muted">{% now "l, d F Y" %}</small>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert alert-warning">{{ error }}</div>
+{% endif %}
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="stat-card highlight">
+            <div class="label">Today's Sales</div>
+            <div class="value">TZS {{ today_total|floatformat:0 }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="label">Transactions</div>
+            <div class="value">{{ today_count }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="label">Est. Gross Profit</div>
+            <div class="value">TZS {{ today_profit|floatformat:0 }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="label">Low Stock Items</div>
+            <div class="value">{{ low_stock|length }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart -->
+<div class="card mb-4">
+    <div class="card-header">Sales – Last 7 Days</div>
+    <div class="card-body">
+        <canvas id="salesChart" height="100"></canvas>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Recent Sales</span>
+                <a href="{% url 'sales-history' %}" class="small">View all</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Receipt</th>
+                                <th>Cashier</th>
+                                <th>Time</th>
+                                <th class="text-end">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sale in recent_sales %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'sale-detail' sale.id %}" class="text-decoration-none">
+                                        {{ sale.transaction_number }}
+                                    </a>
+                                </td>
+                                <td>{{ sale.cashier.get_full_name|default:sale.cashier.username }}</td>
+                                <td>{{ sale.created_at|date:"H:i" }}</td>
+                                <td class="text-end">TZS {{ sale.grand_total|floatformat:0 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-4">No sales yet</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card mb-3">
+            <div class="card-header">Low Stock Alert</div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        {% for s in low_stock %}
+                        <tr>
+                            <td>{{ s.product.name }}</td>
+                            <td class="text-end">
+                                <span class="badge bg-danger-subtle text-danger">{{ s.quantity|floatformat:0 }} left</span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td class="text-center text-muted py-3">All stock levels are healthy</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">Top Products Today</div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        {% for p in top_products %}
+                        <tr>
+                            <td>{{ p.product__name }}</td>
+                            <td class="text-end">{{ p.total_qty|floatformat:0 }} sold</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td class="text-center text-muted py-3">No sales data yet</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'vendor/chartjs/chart.umd.min.js' %}"></script>
+<script>
+    const ctx = document.getElementById('salesChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: {{ chart_labels|safe }},
+                datasets: [{
+                    label: 'Sales (TZS)',
+                    data: {{ chart_values|safe }},
+                    backgroundColor: 'rgba(0, 230, 118, 0.7)',
+                    borderColor: '#00C853',
+                    borderWidth: 1,
+                    borderRadius: 6,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'TZS ' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

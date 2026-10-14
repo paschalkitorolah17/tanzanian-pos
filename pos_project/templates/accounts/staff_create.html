@@ -1,0 +1,69 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Add Staff{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h4 class="mb-0 fw-bold">Add Staff Member</h4>
+    <small class="text-muted">Create a new user for your business</small>
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+{% endif %}
+
+<div class="card" style="max-width: 520px;">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label class="form-label">Username *</label>
+                <input type="text" name="username" class="form-control" required autofocus>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">First Name</label>
+                    <input type="text" name="first_name" class="form-control">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Last Name</label>
+                    <input type="text" name="last_name" class="form-control">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Phone</label>
+                <input type="text" name="phone" class="form-control" placeholder="+255...">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Role *</label>
+                <select name="role" class="form-select" required>
+                    {% for value, label in allowed_roles %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Password *</label>
+                <input type="password" name="password" class="form-control" required>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Confirm Password *</label>
+                <input type="password" name="password2" class="form-control" required>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-neon">Create User</button>
+                <a href="{% url 'staff-list' %}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

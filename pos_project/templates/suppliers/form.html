@@ -1,0 +1,66 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h4 class="mb-0 fw-bold">{{ title }}</h4>
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+{% endif %}
+
+<div class="card" style="max-width: 520px;">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label class="form-label">Supplier Name *</label>
+                <input type="text" name="name" class="form-control" required
+                       value="{{ supplier.name|default:'' }}">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Phone</label>
+                <input type="text" name="phone" class="form-control"
+                       value="{{ supplier.phone|default:'' }}" placeholder="+255...">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-control"
+                       value="{{ supplier.email|default:'' }}">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Address</label>
+                <textarea name="address" class="form-control" rows="2">{{ supplier.address|default:'' }}</textarea>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Notes</label>
+                <textarea name="notes" class="form-control" rows="2">{{ supplier.notes|default:'' }}</textarea>
+            </div>
+
+            {% if supplier %}
+            <div class="mb-3">
+                <div class="form-check">
+                    <input type="checkbox" name="is_active" class="form-check-input" id="is_active"
+                           {% if supplier.is_active %}checked{% endif %}>
+                    <label class="form-check-label" for="is_active">Active</label>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-neon">Save Supplier</button>
+                <a href="{% url 'supplier-list' %}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

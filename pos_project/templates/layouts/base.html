@@ -1,0 +1,60 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Tanzanian POS{% endblock %}</title>
+
+    <!-- Bootstrap 5 Offline -->
+    <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
+    <!-- Bootstrap Icons Offline -->
+    <link rel="stylesheet" href="{% static 'vendor/bootstrap-icons/font/bootstrap-icons.css' %}">
+
+    <!-- Custom styles -->
+    <style>
+        :root {
+            --neon-green: #00E676;
+            --neon-green-dark: #00C853;
+            --dark-bg: #0f172a;
+        }
+
+        body {
+            background-color: #f1f5f9;
+            min-height: 100vh;
+        }
+
+        .btn-neon {
+            background-color: var(--neon-green);
+            border-color: var(--neon-green);
+            color: #000;
+            font-weight: 600;
+        }
+        .btn-neon:hover {
+            background-color: var(--neon-green-dark);
+            border-color: var(--neon-green-dark);
+            color: #000;
+        }
+
+        .login-card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+        }
+
+        .form-control:focus {
+            border-color: var(--neon-green);
+            box-shadow: 0 0 0 0.2rem rgba(0, 230, 118, 0.25);
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% block content %}{% endblock %}
+
+    <!-- Bootstrap JS Offline -->
+    <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

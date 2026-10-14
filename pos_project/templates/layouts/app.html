@@ -1,0 +1,391 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Tanzanian POS{% endblock %}</title>
+
+    <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'vendor/bootstrap-icons/font/bootstrap-icons.css' %}">
+
+    <style>
+        :root {
+            --neon: #00E676;
+            --neon-dark: #00C853;
+            --sidebar-bg: #0f172a;
+            --sidebar-width: 240px;
+            --topbar-height: 56px;
+        }
+
+        body {
+            background: #f1f5f9;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--sidebar-bg);
+            color: #e2e8f0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s ease;
+        }
+        .sidebar-brand {
+            height: var(--topbar-height);
+            display: flex;
+            align-items: center;
+            padding: 0 1.25rem;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: white;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .sidebar-brand i {
+            color: var(--neon);
+            margin-right: 0.6rem;
+            font-size: 1.3rem;
+        }
+        .sidebar-nav {
+            flex: 1;
+            padding: 1rem 0.75rem;
+            overflow-y: auto;
+        }
+        .nav-section {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            padding: 0.75rem 0.75rem 0.35rem;
+        }
+        .sidebar .nav-link {
+            color: #94a3b8;
+            border-radius: 8px;
+            padding: 0.55rem 0.85rem;
+            margin-bottom: 2px;
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            font-size: 0.92rem;
+            transition: all 0.15s;
+            text-decoration: none;
+        }
+        .sidebar .nav-link:hover {
+            background: rgba(255,255,255,0.06);
+            color: white;
+        }
+        .sidebar .nav-link.active {
+            background: rgba(0, 230, 118, 0.15);
+            color: var(--neon);
+            font-weight: 600;
+        }
+        .sidebar .nav-link i {
+            font-size: 1.1rem;
+            width: 22px;
+            text-align: center;
+        }
+
+        .main-wrapper {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .topbar {
+            height: var(--topbar-height);
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .content {
+            flex: 1;
+            padding: 1.5rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.25rem 1.4rem;
+            border: 1px solid #e2e8f0;
+            height: 100%;
+        }
+        .stat-card .label {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-bottom: 0.25rem;
+        }
+        .stat-card .value {
+            font-size: 1.55rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .stat-card.highlight .value {
+            color: var(--neon-dark);
+        }
+
+        .card {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: none;
+        }
+        .card-header {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: 600;
+            padding: 0.9rem 1.25rem;
+        }
+
+        .btn-neon {
+            background: var(--neon);
+            color: #000;
+            font-weight: 600;
+            border: none;
+        }
+        .btn-neon:hover {
+            background: var(--neon-dark);
+            color: #000;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            cursor: pointer;
+        }
+        .user-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        /* Make the logout button look like a dropdown item */
+        .dropdown-item-btn {
+            background: none;
+            border: none;
+            width: 100%;
+            text-align: left;
+            padding: 0.375rem 1rem;
+            color: #dc3545;
+            display: flex;
+            align-items: center;
+        }
+        .dropdown-item-btn:hover {
+            background-color: #f8f9fa;
+        }
+
+        @media (max-width: 991px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.show { transform: translateX(0); }
+            .main-wrapper { margin-left: 0; }
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.4);
+                z-index: 999;
+            }
+            .sidebar-overlay.show { display: block; }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+{% with role=request.user.role %}
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+        <i class="bi bi-shop-window"></i>
+        Tanzanian POS
+    </div>
+{% if user_branches|length > 1 %}
+<form method="post" action="{% url 'switch-branch' %}" class="d-inline">
+    {% csrf_token %}
+    <select name="branch_id" class="form-select form-select-sm" style="width:auto; display:inline-block;"
+            onchange="this.form.submit()">
+        {% for b in user_branches %}
+        <option value="{{ b.id }}" {% if current_branch and current_branch.id == b.id %}selected{% endif %}>
+            {{ b.name }}
+        </option>
+        {% endfor %}
+    </select>
+</form>
+{% elif current_branch %}
+<span class="text-muted small">{{ current_branch.name }}</span>
+{% endif %}
+    <nav class="sidebar-nav">
+
+    {% if role == 'business_owner' or role == 'manager' or role == 'accountant' or role == 'auditor' or role == 'operator' or request.user.is_superuser %}
+    <div class="nav-section">Main</div>
+    <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+        <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+    {% endif %}
+
+    {% if role == 'cashier' or role == 'sales_associate' or role == 'business_owner' or role == 'manager' or request.user.is_superuser %}
+    <a href="{% url 'pos' %}" class="nav-link {% if 'pos' in request.path %}active{% endif %}">
+        <i class="bi bi-cart-check"></i> POS Screen
+    </a>
+    {% endif %}
+
+    {% if role == 'business_owner' or role == 'manager' or role == 'operator' or request.user.is_superuser %}
+    {% if role == 'business_owner' or role == 'manager' or role == 'operator' or request.user.is_superuser %}
+<div class="nav-section mt-3">Catalog</div>
+<a href="{% url 'product-list' %}" class="nav-link">
+    <i class="bi bi-box-seam"></i> Products
+</a>
+<a href="{% url 'category-list' %}" class="nav-link">
+    <i class="bi bi-tags"></i> Categories
+</a>
+<a href="{% url 'label-list' %}" class="nav-link">
+    <i class="bi bi-upc"></i> Print Labels
+</a>
+{% endif %}
+    {% endif %}
+
+    {% if role == 'business_owner' or role == 'manager' or role == 'operator' or request.user.is_superuser %}
+<div class="nav-section mt-3">Inventory</div>
+<a href="{% url 'stock-list' %}" class="nav-link">
+    <i class="bi bi-boxes"></i> Stock Levels
+</a>
+<a href="{% url 'stock-movements' %}" class="nav-link">
+    <i class="bi bi-arrow-left-right"></i> Stock Movements
+</a>
+<a href="{% url 'purchase-list' %}" class="nav-link">
+    <i class="bi bi-truck"></i> Purchases
+</a>
+<a href="{% url 'supplier-list' %}" class="nav-link">
+    <i class="bi bi-building"></i> Suppliers
+</a>
+{% endif %}
+
+    {% if role == 'business_owner' or role == 'manager' or role == 'accountant' or role == 'auditor' or request.user.is_superuser %}
+    <div class="nav-section mt-3">Sales & Finance</div>
+    <a href="{% url 'sales-history' %}" class="nav-link">
+        <i class="bi bi-receipt"></i> Sales History
+    </a>
+    <a href="{% url 'sales-report' %}" class="nav-link">
+        <i class="bi bi-graph-up"></i> Sales Report
+    </a>
+    <a href="{% url 'expense-list' %}" class="nav-link">
+        <i class="bi bi-wallet2"></i> Expenses
+    </a>
+    <a href="{% url 'customer-list' %}" class="nav-link">
+        <i class="bi bi-people"></i> Customers
+    </a>
+    <a href="{% url 'profit-loss' %}" class="nav-link">
+    <i class="bi bi-pie-chart"></i> Profit & Loss
+</a>
+<a href="{% url 'expense-report' %}" class="nav-link">
+    <i class="bi bi-cash-stack"></i> Expense Report
+</a>
+    {% endif %}
+
+    {% if role == 'business_owner' or role == 'manager' or request.user.is_superuser %}
+    <div class="nav-section mt-3">System</div>
+    <a href="{% url 'staff-list' %}" class="nav-link">
+        <i class="bi bi-person-badge"></i> Staff
+    </a>
+    <a href="{% url 'business-settings' %}" class="nav-link">
+    <i class="bi bi-shop"></i> Business Settings
+</a>
+    {% endif %}
+
+</nav>
+</aside>
+{% endwith %}
+
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<div class="main-wrapper">
+    <header class="topbar">
+        <div class="d-flex align-items-center gap-3">
+            <button class="btn btn-sm btn-light d-lg-none" id="btn-toggle-sidebar">
+                <i class="bi bi-list"></i>
+            </button>
+            <span class="text-muted small d-none d-md-inline">
+                {{ request.user.business.name|default:"Tanzanian POS" }}
+            </span>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            {% if request.user.role == 'business_owner' or request.user.role == 'manager' or request.user.role == 'cashier' or request.user.role == 'sales_associate' or request.user.is_superuser %}
+            <a href="{% url 'pos' %}" class="btn btn-sm btn-neon d-none d-md-inline-flex">
+                <i class="bi bi-cart-check me-1"></i> Open POS
+            </a>
+            {% endif %}
+
+            <div class="dropdown">
+                <div class="user-menu" data-bs-toggle="dropdown">
+                    <div class="user-avatar">
+                        {{ request.user.first_name|first|default:request.user.username|first|upper }}
+                    </div>
+                    <div class="d-none d-md-block text-start">
+                        <div class="small fw-semibold">{{ request.user.get_full_name|default:request.user.username }}</div>
+                        <div class="text-muted" style="font-size:0.75rem">{{ request.user.get_role_display }}</div>
+                    </div>
+                    <i class="bi bi-chevron-down small text-muted"></i>
+                </div>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                    <li>
+                        <a class="dropdown-item" href="/admin/accounts/user/{{ request.user.id }}/change/">
+                            <i class="bi bi-person me-2"></i> My Profile
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <!-- POST logout (fixes 405 error) -->
+                        <form method="post" action="{% url 'accounts:logout' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="dropdown-item-btn">
+                                <i class="bi bi-box-arrow-right me-2"></i> Logout
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <main class="content">
+        {% block content %}{% endblock %}
+    </main>
+</div>
+
+<script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+<script>
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const toggleBtn = document.getElementById('btn-toggle-sidebar');
+
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('show');
+            overlay.classList.toggle('show');
+        });
+        overlay.addEventListener('click', () => {
+            sidebar.classList.remove('show');
+            overlay.classList.remove('show');
+        });
+    }
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

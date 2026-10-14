@@ -1,0 +1,107 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Sales History – {{ business.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0 fw-bold">Sales History</h4>
+        <small class="text-muted">All completed and returned sales</small>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-3">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small">Search Receipt</label>
+                <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="SALE-...">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">Status</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    <option value="completed" {% if status == 'completed' %}selected{% endif %}>Completed</option>
+                    <option value="partially_returned" {% if status == 'partially_returned' %}selected{% endif %}>Partially Returned</option>
+                    <option value="fully_returned" {% if status == 'fully_returned' %}selected{% endif %}>Fully Returned</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">From</label>
+                <input type="date" name="from" value="{{ date_from }}" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">To</label>
+                <input type="date" name="to" value="{{ date_to }}" class="form-control form-control-sm">
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-sm btn-neon">Filter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Receipt</th>
+                        <th>Date</th>
+                        <th>Cashier</th>
+                        <th>Branch</th>
+                        <th>Status</th>
+                        <th class="text-end">Total</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in sales %}
+                    <tr>
+                        <td class="fw-semibold">{{ s.transaction_number }}</td>
+                        <td>{{ s.created_at|date:"d M Y H:i" }}</td>
+                        <td>{{ s.cashier.get_full_name|default:s.cashier.username }}</td>
+                        <td>{{ s.branch.name }}</td>
+                        <td>
+                            {% if s.status == 'completed' %}
+                                <span class="badge bg-success-subtle text-success">Completed</span>
+                            {% elif s.status == 'partially_returned' %}
+                                <span class="badge bg-warning-subtle text-warning">Partial Return</span>
+                            {% elif s.status == 'fully_returned' %}
+                                <span class="badge bg-secondary-subtle text-secondary">Fully Returned</span>
+                            {% else %}
+                                {{ s.get_status_display }}
+                            {% endif %}
+                        </td>
+                        <td class="text-end">TZS {{ s.grand_total|floatformat:0 }}</td>
+                        <td class="text-end">
+                            <a href="{% url 'sale-detail' s.pk %}" class="btn btn-sm btn-outline-primary">View</a>
+                            <a href="/pos/receipt/{{ s.id }}/" target="_blank" class="btn btn-sm btn-outline-secondary">Receipt</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-5">No sales found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if sales.has_other_pages %}
+<nav class="mt-3">
+    <ul class="pagination pagination-sm">
+        {% if sales.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ sales.previous_page_number }}&q={{ q }}&status={{ status }}&from={{ date_from }}&to={{ date_to }}">Previous</a></li>
+        {% endif %}
+        <li class="page-item disabled"><span class="page-link">Page {{ sales.number }} of {{ sales.paginator.num_pages }}</span></li>
+        {% if sales.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ sales.next_page_number }}&q={{ q }}&status={{ status }}&from={{ date_from }}&to={{ date_to }}">Next</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

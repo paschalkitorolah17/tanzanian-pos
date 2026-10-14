@@ -1,0 +1,80 @@
+{% extends "layouts/app.html" %}
+{% load static %}
+
+{% block title %}Add Expense{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h4 class="mb-0 fw-bold">Add Expense</h4>
+    <small class="text-muted">Record a business expense</small>
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+{% endif %}
+
+<div class="card" style="max-width: 640px;">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label class="form-label">Category *</label>
+                <select name="category" class="form-select" required>
+                    <option value="">Select category</option>
+                    {% for c in categories %}
+                    <option value="{{ c.id }}">{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Amount (TZS) *</label>
+                <input type="number" name="amount" class="form-control" min="1" step="100" required placeholder="0">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Date *</label>
+                <input type="date" name="date" class="form-control" value="{{ today }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Branch</label>
+                <select name="branch" class="form-select">
+                    <option value="">— Optional —</option>
+                    {% for b in branches %}
+                    <option value="{{ b.id }}">{{ b.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Payment Method</label>
+                <select name="payment_method" class="form-select">
+                    <option value="">— Optional —</option>
+                    {% for m in payment_methods %}
+                    <option value="{{ m.id }}">{{ m.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Description</label>
+                <textarea name="description" class="form-control" rows="2" placeholder="Optional notes"></textarea>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Reference</label>
+                <input type="text" name="reference" class="form-control" placeholder="Receipt no. / transaction code">
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-neon">Save Expense</button>
+                <a href="{% url 'expense-list' %}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Process Return – {{ sale.transaction_number }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h4 class="mb-0 fw-bold">Process Return</h4>
+    <small class="text-muted">Original sale: {{ sale.transaction_number }} · {{ sale.created_at|date:"d M Y H:i" }}</small>
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+{% endif %}
+
+<div class="card" style="max-width: 720px;">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+
+            <h6 class="fw-semibold mb-3">Items to Return</h6>
+            <div class="table-responsive mb-4">
+                <table class="table table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Product</th>
+                            <th class="text-end">Sold</th>
+                            <th class="text-end">Already Returned</th>
+                            <th class="text-end">Returnable</th>
+                            <th width="120">Return Qty</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in returnable_items %}
+                        <tr>
+                            <td>{{ row.item.product.name }}</td>
+                            <td class="text-end">{{ row.item.quantity|floatformat:0 }}</td>
+                            <td class="text-end">{{ row.item.quantity_returned|floatformat:0 }}</td>
+                            <td class="text-end">{{ row.remaining|floatformat:0 }}</td>
+                            <td>
+                                <input type="number"
+                                       name="qty_{{ row.item.id }}"
+                                       class="form-control form-control-sm"
+                                       min="0"
+                                       max="{{ row.remaining }}"
+                                       step="1"
+                                       value="0">
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">Nothing left to return</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Reason</label>
+                <input type="text" name="reason" class="form-control" placeholder="e.g. Damaged, Customer request">
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label">Refund Method</label>
+                    <select name="refund_method" class="form-select">
+                        <option value="">— Optional —</option>
+                        {% for m in payment_methods %}
+                        <option value="{{ m.id }}">{{ m.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Refund Reference</label>
+                    <input type="text" name="refund_reference" class="form-control" placeholder="Optional">
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-neon" {% if not returnable_items %}disabled{% endif %}>
+                    Process Return
+                </button>
+                <a href="{% url 'sale-detail' sale.id %}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

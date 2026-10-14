@@ -1,0 +1,221 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Receipt - {{ sale.transaction_number }}</title>
+    <style>
+        /* Reset for clean printing */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+            color: #000;
+            background: #f1f5f9;
+            padding: 20px;
+        }
+
+        .receipt {
+            width: 80mm;               /* Default 80mm thermal */
+            max-width: 300px;
+            margin: 0 auto;
+            background: white;
+            padding: 12px 14px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+
+        .center { text-align: center; }
+        .bold { font-weight: bold; }
+        .small { font-size: 11px; }
+        .mt-1 { margin-top: 6px; }
+        .mt-2 { margin-top: 10px; }
+        .mb-1 { margin-bottom: 6px; }
+        .mb-2 { margin-bottom: 10px; }
+
+        .line {
+            border-top: 1px dashed #333;
+            margin: 8px 0;
+        }
+
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3px;
+        }
+        .item-name { flex: 1; padding-right: 6px; }
+        .item-qty  { width: 35px; text-align: center; }
+        .item-total{ width: 70px; text-align: right; }
+
+        .totals .row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3px;
+        }
+        .grand {
+            font-size: 15px;
+            font-weight: bold;
+            margin-top: 4px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 11px;
+        }
+
+        /* Print styles */
+        @media print {
+            body { background: white; padding: 0; }
+            .receipt { box-shadow: none; width: 80mm; }
+            .no-print { display: none !important; }
+        }
+
+        /* 58mm support */
+        @media (max-width: 60mm) {
+            .receipt { width: 58mm; font-size: 12px; }
+        }
+
+        .actions {
+            text-align: center;
+            margin: 20px auto;
+            max-width: 300px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 8px 18px;
+            margin: 0 4px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-print {
+            background: #00E676;
+            color: #000;
+        }
+        .btn-back {
+            background: #e2e8f0;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+<div class="actions no-print">
+    <button class="btn btn-print" onclick="window.print()">
+        🖨️ Print Receipt
+    </button>
+    <a href="/pos/" class="btn btn-back">← Back to POS</a>
+</div>
+
+<div class="receipt" id="receipt">
+    <!-- Header -->
+    <div class="center bold" style="font-size:15px">
+        {{ sale.business.name }}
+    </div>
+    {% if sale.business.address %}
+    <div class="center small">{{ sale.business.address }}</div>
+    {% endif %}
+    {% if sale.business.phone %}
+    <div class="center small">Tel: {{ sale.business.phone }}</div>
+    {% endif %}
+    {% if sale.business.tin %}
+    <div class="center small">TIN: {{ sale.business.tin }}</div>
+    {% endif %}
+
+    <div class="line"></div>
+
+    <div class="small">
+        <div>Receipt: <strong>{{ sale.transaction_number }}</strong></div>
+        <div>Date: {{ sale.created_at|date:"d/m/Y H:i" }}</div>
+        <div>Cashier: {{ sale.cashier.get_full_name|default:sale.cashier.username }}</div>
+        <div>Branch: {{ sale.branch.name }}</div>
+        {% if sale.customer %}
+        <div>Customer: {{ sale.customer.name }}</div>
+        {% endif %}
+    </div>
+
+    <div class="line"></div>
+
+    <!-- Items -->
+    <div class="small bold mb-1">
+        <div class="item-row">
+            <span class="item-name">Item</span>
+            <span class="item-qty">Qty</span>
+            <span class="item-total">Total</span>
+        </div>
+    </div>
+
+    {% for item in sale.items.all %}
+    <div class="item-row small">
+        <span class="item-name">{{ item.product.name }}</span>
+        <span class="item-qty">{{ item.quantity|floatformat:0 }}</span>
+        <span class="item-total">{{ item.line_total|floatformat:0 }}</span>
+    </div>
+    {% if item.discount > 0 %}
+    <div class="small" style="padding-left:4px; color:#555">
+        Disc: -{{ item.discount|floatformat:0 }}
+    </div>
+    {% endif %}
+    {% endfor %}
+
+    <div class="line"></div>
+
+    <!-- Totals -->
+    <div class="totals small">
+        <div class="row">
+            <span>Subtotal</span>
+            <span>{{ sale.subtotal|floatformat:0 }}</span>
+        </div>
+        {% if sale.discount_total > 0 %}
+        <div class="row">
+            <span>Discount</span>
+            <span>-{{ sale.discount_total|floatformat:0 }}</span>
+        </div>
+        {% endif %}
+        {% if sale.tax_total > 0 %}
+        <div class="row">
+            <span>Tax (VAT)</span>
+            <span>{{ sale.tax_total|floatformat:0 }}</span>
+        </div>
+        {% endif %}
+        <div class="row grand">
+            <span>TOTAL</span>
+            <span>TZS {{ sale.grand_total|floatformat:0 }}</span>
+        </div>
+    </div>
+
+    <div class="line"></div>
+
+    <!-- Payments -->
+    <div class="small mb-1"><strong>Payments</strong></div>
+    {% for p in sale.payments.all %}
+    <div class="item-row small">
+        <span>{{ p.payment_method.name }}{% if p.reference %} ({{ p.reference }}){% endif %}</span>
+        <span>{{ p.amount|floatformat:0 }}</span>
+    </div>
+    {% endfor %}
+
+    <div class="line"></div>
+
+    <!-- Footer -->
+    <div class="footer">
+        {% if sale.business.settings.receipt_footer %}
+            {{ sale.business.settings.receipt_footer }}
+        {% else %}
+            Asante kwa kununua! Karibu tena.
+        {% endif %}
+        <br><br>
+        Powered by Tanzanian POS
+    </div>
+</div>
+
+<script>
+    // Optional: auto-print when opened from POS
+    // window.onload = function() { window.print(); }
+</script>
+</body>
+</html>

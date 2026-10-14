@@ -1,0 +1,352 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}POS – {{ request.user.business.name|default:"Tanzanian POS" }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --neon: #00E676;
+        --neon-dark: #00C853;
+        --dark: #0f172a;
+    }
+
+    body {
+        background: #f1f5f9;
+        margin: 0;
+    }
+
+    /* Top bar */
+    .pos-topbar {
+        background: var(--dark);
+        color: #e2e8f0;
+        padding: 0.55rem 1.25rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+    }
+    .pos-topbar .brand {
+        font-weight: 700;
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .pos-topbar .brand i {
+        color: var(--neon);
+    }
+    .pos-topbar .badge-role {
+        background: rgba(0, 230, 118, 0.15);
+        color: var(--neon);
+        font-size: 0.75rem;
+        padding: 0.2rem 0.55rem;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+    .pos-topbar a {
+        color: #94a3b8;
+        text-decoration: none;
+    }
+    .pos-topbar a:hover {
+        color: white;
+    }
+
+    /* Search */
+    .search-box {
+        position: relative;
+    }
+    .search-box input {
+        font-size: 1.1rem;
+        padding: 0.7rem 1rem;
+        border: 2px solid #cbd5e1;
+        border-radius: 8px;
+    }
+    .search-box input:focus {
+        border-color: var(--neon);
+        box-shadow: 0 0 0 0.2rem rgba(0, 230, 118, 0.2);
+    }
+    .suggestions {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 0 0 8px 8px;
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 50;
+        display: none;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    }
+    .suggestions.active { display: block; }
+    .suggestion-item {
+        padding: 0.65rem 1rem;
+        cursor: pointer;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .suggestion-item:hover {
+        background: #ecfdf5;
+    }
+
+    /* Cart */
+    .cart-table th {
+        background: #f8fafc;
+        font-size: 0.8rem;
+        white-space: nowrap;
+    }
+
+    /* Totals */
+    .totals-box {
+        background: white;
+        border-radius: 12px;
+        padding: 1.2rem;
+        border: 1px solid #e2e8f0;
+    }
+    .grand-total {
+        font-size: 1.7rem;
+        font-weight: 700;
+        color: var(--dark);
+    }
+
+    .btn-complete {
+        background: var(--neon);
+        border: none;
+        color: #000;
+        font-weight: 700;
+        font-size: 1.1rem;
+        padding: 0.85rem;
+        border-radius: 8px;
+    }
+    .btn-complete:hover {
+        background: var(--neon-dark);
+        color: #000;
+    }
+    .btn-complete:disabled {
+        opacity: 0.65;
+    }
+
+    .payment-method {
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.55rem;
+        text-align: center;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.15s;
+    }
+    .payment-method.active {
+        border-color: var(--neon);
+        background: #ecfdf5;
+        font-weight: 600;
+    }
+
+    /* Skeleton */
+    .skeleton {
+        background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+        background-size: 200% 100%;
+        animation: skeleton 1.4s ease infinite;
+        border-radius: 4px;
+        height: 1.1rem;
+    }
+    @keyframes skeleton {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    .network-status.online { color: var(--neon); }
+    .network-status.offline { color: #ef4444; }
+
+    @media (max-width: 991px) {
+        .grand-total { font-size: 1.4rem; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Top Bar -->
+<div class="pos-topbar">
+    <div class="d-flex align-items-center gap-3">
+        <div class="brand">
+            <i class="bi bi-shop-window"></i>
+            {{ request.user.business.name|default:"POS" }}
+        </div>
+        <span class="badge-role">{{ request.user.get_role_display }}</span>
+    </div>
+
+    <div class="d-flex align-items-center gap-3">
+        <span id="current-time"></span>
+        <span class="network-status online" id="network-status">
+            <i class="bi bi-wifi"></i> Online
+        </span>
+        <a href="{% url 'dashboard' %}">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+        <a href="{% url 'accounts:logout' %}">
+            <i class="bi bi-box-arrow-right"></i> Logout
+        </a>
+    </div>
+</div>
+
+<div class="container-fluid py-3">
+    <div class="row g-3">
+        <!-- Left: Search + Cart -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body">
+                    <div class="search-box">
+                        <input type="text"
+                               id="product-search"
+                               class="form-control"
+                               placeholder="Scan barcode or type product name / SKU (F2)"
+                               autocomplete="off">
+                        <div class="suggestions" id="suggestions"></div>
+                    </div>
+                    <div id="search-skeleton" class="mt-2 d-none">
+                        <div class="skeleton mb-2" style="width:75%"></div>
+                        <div class="skeleton mb-2" style="width:55%"></div>
+                        <div class="skeleton" style="width:65%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+                    <strong>Cart</strong>
+                    <button class="btn btn-sm btn-outline-danger" id="btn-clear-cart">
+                        <i class="bi bi-trash"></i> Clear
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover cart-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th width="90">Qty</th>
+                                    <th width="100">Price</th>
+                                    <th width="90">Disc.</th>
+                                    <th width="110">Total</th>
+                                    <th width="40"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="cart-body">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-5">
+                                        <i class="bi bi-cart" style="font-size:1.8rem"></i><br>
+                                        Cart is empty. Scan or search a product.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+<!-- Customer (optional) -->
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+        <strong>Customer</strong>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-add-customer">
+            + Add
+        </button>
+    </div>
+    <div class="card-body py-2">
+        <div id="selected-customer" class="small text-muted">Walk-in customer</div>
+        <input type="hidden" id="customer-id" value="">
+    </div>
+</div>
+        <!-- Right: Totals + Payments -->
+        <div class="col-lg-4">
+            <div class="totals-box mb-3">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Subtotal</span>
+                    <span id="subtotal">TZS 0</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Discount</span>
+                    <span id="discount-total">TZS 0</span>
+                </div>
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="text-muted">Tax</span>
+                    <span id="tax-total">TZS 0</span>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between align-items-center">
+                    <strong>Grand Total</strong>
+                    <div class="grand-total" id="grand-total">TZS 0</div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white py-2">
+                    <strong>Payment</strong>
+                </div>
+                <div class="card-body">
+                    <div id="payment-methods" class="row g-2 mb-3"></div>
+                    <div id="payment-inputs"></div>
+                    <div class="d-flex justify-content-between mt-2 small">
+                        <span>Paid</span>
+                        <strong id="paid-total">TZS 0</strong>
+                    </div>
+                    <div class="d-flex justify-content-between small">
+                        <span>Change / Balance</span>
+                        <strong id="change-amount">TZS 0</strong>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-complete w-100" id="btn-complete-sale" disabled>
+                <i class="bi bi-check2-circle"></i> Complete Sale
+            </button>
+        </div>
+    </div>
+</div>
+<!-- Quick Add Customer Modal -->
+<div class="modal fade" id="customerModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title">Add Customer</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2">
+                    <label class="form-label small">Name *</label>
+                    <input type="text" id="new-customer-name" class="form-control form-control-sm" required>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">Phone</label>
+                    <input type="text" id="new-customer-phone" class="form-control form-control-sm" placeholder="+255...">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm btn-neon" id="btn-save-customer">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Toasts -->
+<div class="position-fixed top-0 end-0 p-3" style="z-index:1100">
+    <div id="toast-container"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script id="pos-config" type="application/json">
+{
+    "branchId": {% if current_branch %}{{ current_branch.id }}{% else %}null{% endif %},
+    "csrfToken": "{{ csrf_token|escapejs }}",
+    "apiUrl": "/api/v1/sales/",
+    "currency": "TZS"
+}
+</script>
+<script>
+    window.POS_CONFIG = JSON.parse(document.getElementById('pos-config').textContent);
+</script>
+<script src="{% static 'js/pos/pos.js' %}"></script>
+{% endblock %}
